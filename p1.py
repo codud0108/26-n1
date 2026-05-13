@@ -1,59 +1,141 @@
 import streamlit as st
-import requests
 
-# --- 설정 ---
-API_KEY = "여기에_발급받은_API_KEY를_입력하세요"
-BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+# --- 페이지 설정 ---
+st.set_page_config(page_title="Minimal Flashcards", page_icon="🎴", layout="centered")
 
-# --- 날씨별 추천 음악 데이터 ---
-# 실제로는 Spotify API를 연결하거나 유튜브 링크를 넣으면 더 좋습니다.
-MUSIC_RECOMMENDATIONS = {
-    "Clear": {"genre": "Pop / Funk", "desc": "햇살 가득한 날! 신나는 팝송 어떠세요?", "icon": "☀️"},
-    "Clouds": {"genre": "Lo-fi / Indie", "desc": "구름 낀 하늘, 차분한 인디 음악이 딱이죠.", "icon": "☁️"},
-    "Rain": {"genre": "Jazz / Soul", "desc": "빗소리와 어울리는 감성적인 재즈를 추천합니다.", "icon": "🌧️"},
-    "Snow": {"genre": "Acoustic / Carol", "desc": "눈 내리는 풍경과 어울리는 따뜻한 어쿠스틱 음악입니다.", "icon": "❄️"},
-    "Thunderstorm": {"genre": "Rock / Metal", "desc": "강렬한 비트의 락으로 에너지를 채워보세요!", "icon": "⚡"},
-    "Mist": {"genre": "Ambient", "desc": "안개 속을 걷는 듯한 몽환적인 앰비언트 사운드입니다.", "icon": "🌫️"}
-}
-
-def get_weather(city):
-    params = {"q": city, "appid": API_KEY, "units": "metric"}
-    response = requests.get(BASE_URL, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
-
-# --- Streamlit UI ---
-st.set_page_config(page_title="Weather Music App", page_icon="🎵")
-
-st.title("🎵 날씨 맞춤형 노래 추천")
-st.write("도시 이름을 입력하면 현재 날씨에 어울리는 음악 장르를 추천해 드립니다.")
-
-city = st.text_input("도시 입력 (예: Seoul, London, Tokyo)", "Seoul")
-
-if st.button("추천 받기"):
-    data = get_weather(city)
+# --- 커스텀 블랙 & 화이트 테마 CSS ---
+st.markdown("""
+    <style>
+    /* 전체 배경색 흰색 */
+    .stApp {
+        background-color: #FFFFFF;
+    }
     
-    if data:
-        weather_main = data['weather'][0]['main']
-        temp = data['main']['temp']
-        
-        # 날씨 정보 표시
-        st.subheader(f"📍 {city}의 현재 날씨")
-        col1, col2 = st.columns(2)
-        col1.metric("온도", f"{temp}°C")
-        col2.metric("날씨", weather_main)
+    /* 텍스트 색상 검정색 */
+    h1, h2, h3, p, span, label {
+        color: #000000 !important;
+        font-family: 'Inter', sans-serif;
+    }
 
-        # 음악 추천 로직
-        recommendation = MUSIC_RECOMMENDATIONS.get(weather_main, {"genre": "K-Pop", "desc": "좋은 음악과 함께 즐거운 하루 보내세요!", "icon": "🎶"})
+    /* 플래시카드 스타일 */
+    .flashcard {
+        background-color: #FFFFFF;
+        border: 2px solid #000000;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        box-shadow: 5px 5px 0px #000000;
+    }
+
+    .card-text {
+        font-size: 24px;
+        font-weight: bold;
+        color: #000000;
+    }
+
+    /* 버튼 스타일 (검정 배경, 흰 글씨) */
+    .stButton>button {
+        background-color: #000000;
+        color: #FFFFFF;
+        border-radius: 0px;
+        border: 1px solid #000000;
+        width: 100%;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    .stButton>button:hover {
+        background-color: #FFFFFF;
+        color: #000000;
+        border: 1px solid #000000;
+    }
+
+    /* 입력창 스타일 */
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        border: 1px solid #000000 !important;
+        border-radius: 0px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 데이터 초기화 (세션 상태) ---
+if 'cards' not in st.session_state:
+    st.session_state.cards = [
+        {"q": "Streamlit이란?", "a": "파이썬으로 웹 앱을 빠르게 만드는 라이브러리입니다."},
+        {"q": "GitHub의 역할은?", "a": "코드의 버전 관리와 협업을 위한 플랫폼입니다."}
+    ]
+
+if 'card_index' not in st.session_state:
+    st.session_state.card_index = 0
+
+if 'flipped' not in st.session_state:
+    st.session_state.flipped = False
+
+# --- 앱 UI ---
+st.title("🎴 MINIMAL FLASHCARDS")
+
+# 현재 카드 정보
+if len(st.session_state.cards) > 0:
+    current_card = st.session_state.cards[st.session_state.card_index]
+
+    # 카드 표시 구역
+    display_text = current_card['a'] if st.session_state.flipped else current_card['q']
+    label_text = "ANSWER" if st.session_state.flipped else "QUESTION"
+    
+    st.markdown(f"<p style='text-align:center; font-size:12px; font-weight:bold;'>{label_text}</p>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="flashcard">
+            <div class="card-text">{display_text}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 제어 버튼
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("PREV"):
+            st.session_state.card_index = (st.session_state.card_index - 1) % len(st.session_state.cards)
+            st.session_state.flipped = False
+            st.rerun()
+
+    with col2:
+        if st.button("FLIP"):
+            st.session_state.flipped = not st.session_state.flipped
+            st.rerun()
+
+    with col3:
+        if st.button("NEXT"):
+            st.session_state.card_index = (st.session_state.card_index + 1) % len(st.session_state.cards)
+            st.session_state.flipped = False
+            st.rerun()
+
+    st.write(f"Card {st.session_state.card_index + 1} of {len(st.session_state.cards)}")
+
+else:
+    st.info("카드가 없습니다. 아래에서 카드를 추가해 보세요.")
+
+st.markdown("---")
+
+# --- 카드 추가 및 삭제 관리 ---
+with st.expander("➕ MANAGE CARDS"):
+    with st.form("add_card_form", clear_on_submit=True):
+        new_q = st.text_input("Question")
+        new_a = st.text_area("Answer")
+        submit = st.form_submit_button("ADD CARD")
         
-        st.divider()
-        st.header(f"{recommendation['icon']} 오늘의 추천 장르: **{recommendation['genre']}**")
-        st.info(recommendation['desc'])
-        
-        # (옵션) 유튜브 검색 링크 연결
-        search_url = f"https://www.youtube.com/results?search_query={recommendation['genre']}+music+for+a+{weather_main}+day"
-        st.link_button("유튜브에서 노래 듣기", search_url)
-    else:
-        st.error("도시를 찾을 수 없습니다. 영문 철자를 확인해 주세요!")
+        if submit and new_q and new_a:
+            st.session_state.cards.append({"q": new_q, "a": new_a})
+            st.success("카드가 추가되었습니다!")
+            st.rerun()
+
+    if st.button("DELETE CURRENT CARD"):
+        if len(st.session_state.cards) > 0:
+            st.session_state.cards.pop(st.session_state.card_index)
+            st.session_state.card_index = 0
+            st.session_state.flipped = False
+            st.rerun()

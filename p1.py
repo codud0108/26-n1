@@ -65,7 +65,7 @@ if 'flipped' not in st.session_state:
     st.session_state.flipped = False
 
 # --- 메인 학습 화면 ---
-st.title("🎴 FLASHCARD STUDY")
+st.title("FLASHCARD")
 
 if st.session_state.cards:
     # 인덱스 범위 초과 방지

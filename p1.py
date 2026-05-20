@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
-import registrations  # Safe evaluation을 위한 내장 모듈 대용 (아래 단순화된 파싱 사용)
 
 # 페이지 설정
 st.set_page_config(page_title="수학 함수 그래프 시각화 Tool", layout="centered")
@@ -45,7 +44,7 @@ if user_input:
             'e': np.e
         }
         
-        # 입력된 식 계산 (eval 사용 시 최소한의 보안을 위해 주입 가능 환경 제한)
+        # 입력된 식 계산 (__builtins__를 차단하여 최소한의 보안 확보)
         y = eval(user_input, {"__builtins__": None}, allowed_words)
         
         # Plotly를 이용한 인터랙티브 그래프 그리기

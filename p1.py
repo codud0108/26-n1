@@ -1,119 +1,70 @@
 import streamlit as st
+import numpy as np
+import plotly.graph_objects as go
+import registrations  # Safe evaluation을 위한 내장 모듈 대용 (아래 단순화된 파싱 사용)
 
-# --- 페이지 설정 ---
-st.set_page_config(page_title="Flashcard Manager", page_icon="🗂️", layout="centered")
+# 페이지 설정
+st.set_page_config(page_title="수학 함수 그래프 시각화 Tool", layout="centered")
 
-# --- 커스텀 스타일 (하얀 배경, 검은 글씨 버튼 고정) ---
+st.title("📊 수학 함수 그래프 시각화 앱")
+st.write("원하는 수학 함수식을 입력하면 실시간으로 그래프를 그려줍니다.")
+
+# 사이드바에서 범위 및 설정 입력
+st.sidebar.header("⚙️ 그래프 설정")
+x_min = st.sidebar.number_input("X 최소값", value=-10.0)
+x_max = st.sidebar.number_input("X 최대값", value=10.0)
+points = st.sidebar.slider("조밀도 (데이터 포인트 수)", min_value=50, max_value=1000, value=500)
+
+# 안내 문구
 st.markdown("""
-    <style>
-    .stApp { background-color: #FFFFFF; }
-    
-    /* 모든 버튼 스타일: 하얀 배경 + 검은 글씨 */
-    div.stButton > button {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #000000 !important;
-        border-radius: 0px !important;
-        font-weight: bold !important;
-        transition: 0.2s;
-    }
-    
-    div.stButton > button:hover {
-        background-color: #F0F0F0 !important;
-    }
+> 💡 **입력 가이드:**
+> * 곱하기는 `*`, 거듭제곱은 `**` 로 입력하세요. (예: $x^2$은 `x**2`)
+> * 파이($\pi$)는 `pi`, 자연상수($e$)는 `e`로 입력할 수 있습니다.
+> * 지원 함수: `sin`, `cos`, `tan`, `log`, `exp`, `sqrt`, `abs` 등
+""")
 
-    /* 플래시카드 디자인 */
-    .flashcard {
-        background-color: #FFFFFF;
-        border: 4px solid #000000;
-        padding: 40px;
-        text-align: center;
-        min-height: 250px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 10px 10px 0px #000000;
-        margin-bottom: 30px;
-    }
+# 함수식 입력받기
+user_input = st.text_input("수학 함수식을 입력하세요 (x에 대한 식):", value="sin(x) * exp(-0.1*x)")
 
-    .card-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 10px; }
-    .card-content { font-size: 24px; font-weight: bold; color: #000; }
-
-    /* 리스트 아이템 스타일 */
-    .card-item {
-        border-bottom: 1px solid #000;
-        padding: 10px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-# --- 메인 학습 화면 ---
-st.title("FLASHCARD")
-
-if st.session_state.cards:
-    # 인덱스 범위 초과 방지
-    st.session_state.idx = min(st.session_state.idx, len(st.session_state.cards) - 1)
-    curr = st.session_state.cards[st.session_state.idx]
-    
-    mode = "ANSWER" if st.session_state.flipped else "QUESTION"
-    text = curr['a'] if st.session_state.flipped else curr['q']
-
-    st.markdown(f"""
-        <div class="flashcard">
-            <div class="card-label">{mode}</div>
-            <div class="card-content">{text}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col1:
-        if st.button("PREVIOUS"):
-            st.session_state.idx = (st.session_state.idx - 1) % len(st.session_state.cards)
-            st.session_state.flipped = False
-            st.rerun()
-    with col2:
-        if st.button("FLIP"):
-            st.session_state.flipped = not st.session_state.flipped
-            st.rerun()
-    with col3:
-        if st.button("NEXT"):
-            st.session_state.idx = (st.session_state.idx + 1) % len(st.session_state.cards)
-            st.session_state.flipped = False
-            st.rerun()
-else:
-    st.info("카드가 비어있습니다. 아래에서 추가해주세요.")
-
-st.markdown("---")
-
-# --- 카드 관리 섹션 (MANAGE CARDS) ---
-st.header("🛠️ MANAGE CARDS")
-
-# 1. 카드 추가
-with st.expander("➕ ADD NEW CARD"):
-    new_q = st.text_input("질문")
-    new_a = st.text_area("정답")
-    if st.button("ADD CARD"):
-        if new_q and new_a:
-            st.session_state.cards.append({"q": new_q, "a": new_a})
-            st.success("추가되었습니다!")
-            st.rerun()
-
-# 2. 개별 카드 삭제 리스트
-with st.expander("🗑️ DELETE SPECIFIC CARDS", expanded=True):
-    if not st.session_state.cards:
-        st.write("삭제할 카드가 없습니다.")
-    else:
-        for i, card in enumerate(st.session_state.cards):
-            col_txt, col_btn = st.columns([4, 1])
-            with col_txt:
-                st.markdown(f"**{i+1}. {card['q']}**")
-            with col_btn:
-                # 각 카드마다 고유한 키(key)를 부여하여 삭제 버튼 생성
-                if st.button(f"DELETE", key=f"del_{i}"):
-                    st.session_state.cards.pop(i)
-                    # 현재 인덱스 조정
-                    st.session_state.idx = max(0, st.session_state.idx - 1)
-                    st.rerun()
+if user_input:
+    try:
+        # X 축 데이터 생성
+        x = np.linspace(x_min, x_max, points)
+        
+        # 안전한 계산을 위한 환경 사전 정의 (numpy 함수 매핑)
+        allowed_words = {
+            'x': x,
+            'sin': np.sin,
+            'cos': np.cos,
+            'tan': np.tan,
+            'log': np.log,
+            'exp': np.exp,
+            'sqrt': np.sqrt,
+            'abs': np.abs,
+            'pi': np.pi,
+            'e': np.e
+        }
+        
+        # 입력된 식 계산 (eval 사용 시 최소한의 보안을 위해 주입 가능 환경 제한)
+        y = eval(user_input, {"__builtins__": None}, allowed_words)
+        
+        # Plotly를 이용한 인터랙티브 그래프 그리기
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name=f"y = {user_input}", line=dict(color='#00CC96', width=3)))
+        
+        fig.update_layout(
+            title=f"<b>주어진 함수의 그래프: $y = {user_input}$</b>",
+            xaxis_title="X 축",
+            yaxis_title="Y 축",
+            template="plotly_white",
+            hovermode="x unified"
+        )
+        
+        # 스트림릿에 그래프 출력
+        st.plotly_chart(fig, use_container_width=True)
+        
+    except Exception as e:
+        st.error(
+            f"❌ 수식을 계산하는 중 오류가 발생했습니다. 입력을 다시 확인해주세요.\n"
+            f"오류 메시지: {e}"
+        )

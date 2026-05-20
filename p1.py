@@ -50,14 +50,6 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-
-# --- 데이터 초기화 ---
-if 'idx' not in st.session_state:
-    st.session_state.idx = 0
-
-if 'flipped' not in st.session_state:
-    st.session_state.flipped = False
-
 # --- 메인 학습 화면 ---
 st.title("FLASHCARD")
 

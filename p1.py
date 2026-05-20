@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 # 페이지 설정
 st.set_page_config(page_title="수학 함수 그래프 시각화 Tool", layout="centered")
 
-st.title("📊 수학 함수 그래프 시각화 앱")
+st.title("함수 그래프 시각화")
 st.write("원하는 수학 함수식을 입력하면 실시간으로 그래프를 그려줍니다.")
 
 # 사이드바에서 범위 및 설정 입력

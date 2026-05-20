@@ -52,12 +52,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 데이터 초기화 ---
-if 'cards' not in st.session_state:
-    st.session_state.cards = [
-        {"q": "GitHub란?", "a": "코드 저장소 및 협업 플랫폼"},
-        {"q": "Streamlit이란?", "a": "파이썬 웹 앱 프레임워크"}
-    ]
-
 if 'idx' not in st.session_state:
     st.session_state.idx = 0
 
